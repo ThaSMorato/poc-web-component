@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trabalho Thales Silva Morato - AFM</title>
+  </head>
+  <body>
+    <style>
+      body {
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #app {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #app * {
+        margin: 10px;
+      }
+    </style>
+    <div id="app">
+      <wc-relogio id="clock1"></wc-relogio>
+      <button class="changeTypeClock" data-target="clock1">Troca tipo 1</button>
+      <wc-relogio id="clock2" tipo="analogico"></wc-relogio>
+      <button class="changeTypeClock" data-target="clock2">Troca tipo 2</button>
+    </div>
+
+    <script>
+      const handleButtonClick = (event) => {
+        const clockId = event.target.getAttribute("data-target");
+        const clock = document.getElementById(clockId);
+        const clockType = clock.getAttribute("tipo");
+        const newType = clockType === "analogico" ? "digital" : "analogico";
+
+        clock.setAttribute("tipo", newType);
+      };
+
+      const handleEachButton = (el) => {
+        el.addEventListener("click", handleButtonClick);
+      };
+
+      Array.from(document.getElementsByClassName("changeTypeClock")).forEach(handleEachButton);
+
+      const getFullTime = () => {
+        const date = new Date();
+        const hour = String(date.getHours()).padStart(2, "0");
+        const minute = String(date.getMinutes()).padStart(2, "0");
+        const second = String(date.getSeconds()).padStart(2, "0");
+        return { hour, minute, second };
+      };
+
+      class WcRelogio extends HTMLElement {
+        static observedAttributes = ["tipo"];
+
+        static types = ["analogico", "digital"];
+
+        constructor() {
+          super();
+          this.attachShadow({ mode: "open" });
+
+          this.type = "digital";
+        }
+
+        disconnectedCallback() {
+          clearInterval(this.intervalCounter);
+        }
+
+        attributeChangedCallback(attr, oldValue, newValue) {
+          if (newValue !== oldValue && WcRelogio.types.includes(newValue)) {
+            this.type = newValue;
+            this.render();
+          }
+        }
+
+        connectedCallback() {
+          const atributeType = this.getAttribute("tipo");
+          this.type = atributeType ? atributeType : "digital";
+          this.intervalCounter = setInterval(() => this.changeTime(), 1000);
+          this.render();
+        }
+
+        constructAnalogicSvg() {
+          const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          const svgGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          const clock = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          const pointer = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          const pathGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+          svg.setAttributeNS(null, "width", "100");
+          svg.setAttributeNS(null, "height", "100");
+
+          svgGroup.setAttributeNS(null, "transform", "translate(50, 50)");
+
+          pathGroup.setAttributeNS(null, "fill", "none");
+          pathGroup.setAttributeNS(null, "stroke", "black");
+          pathGroup.setAttributeNS(null, "stroke-width", "2");
+
+          Array.from({ length: 12 }).forEach((i, index) => {
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+            let valueTranslate;
+
+            if (index <= 6) valueTranslate = index * 30;
+            else valueTranslate = (6 - index) * 30;
+
+            path.setAttributeNS(null, "d", "M 0 -40 V -45");
+            path.setAttributeNS(null, "transform", `rotate(${valueTranslate})`);
+
+            pathGroup.appendChild(path);
+          });
+
+          clock.setAttributeNS(null, "cx", "0");
+          clock.setAttributeNS(null, "cy", "0");
+          clock.setAttributeNS(null, "fill", "none");
+          clock.setAttributeNS(null, "stroke", "black");
+          clock.setAttributeNS(null, "stroke-width", "2");
+          clock.setAttributeNS(null, "r", "45");
+
+          pointer.setAttributeNS(null, "cx", "0");
+          pointer.setAttributeNS(null, "cy", "0");
+          pointer.setAttributeNS(null, "fill", "black");
+          pointer.setAttributeNS(null, "stroke", "none");
+          pointer.setAttributeNS(null, "r", "3");
+
+          svg.appendChild(svgGroup);
+
+          svgGroup.appendChild(clock);
+          svgGroup.appendChild(pointer);
+          svgGroup.appendChild(pathGroup);
+
+          return svg;
+        }
+
+        constructTimeAnalogicSvg() {
+          const hour = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          const minute = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          const seconds = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+          hour.setAttributeNS(null, "d", "M 0 0 V -12");
+          hour.setAttributeNS(null, "stroke", "green");
+          hour.setAttributeNS(null, "stroke-width", "2");
+          hour.setAttributeNS(null, "fill", "none");
+          hour.setAttributeNS(null, "transform", "translate(50, 50)");
+
+          minute.setAttributeNS(null, "d", "M 0 0 V -25");
+          minute.setAttributeNS(null, "stroke", "orange");
+          minute.setAttributeNS(null, "stroke-width", "2");
+          minute.setAttributeNS(null, "fill", "none");
+          minute.setAttributeNS(null, "transform", "translate(50, 50)");
+
+          seconds.setAttributeNS(null, "d", "M 0 0 V -38");
+          seconds.setAttributeNS(null, "stroke", "red");
+          seconds.setAttributeNS(null, "stroke-width", "2");
+          seconds.setAttributeNS(null, "fill", "none");
+          seconds.setAttributeNS(null, "transform", "translate(50, 50)");
+
+          return {
+            hour,
+            minute,
+            seconds,
+          };
+        }
+
+        getTimeElement() {
+          return this.type == "analogico"
+            ? this.constructTimeAnalogicSvg()
+            : { text: document.createElement("span") };
+        }
+
+        getContainer() {
+          return this.type == "analogico"
+            ? this.constructAnalogicSvg()
+            : document.createElement("div");
+        }
+
+        constructElement() {
+          this.container = this.getContainer();
+          this.elementTime = this.getTimeElement();
+          Object.keys(this.elementTime).forEach((el) => {
+            this.container.appendChild(this.elementTime[el]);
+          });
+          return this.container;
+        }
+
+        changeTextTime() {
+          this.elementTime.text.textContent = `${this.time.hour}:${this.time.minute}:${this.time.second}`;
+        }
+
+        changePointerTime() {
+          const defaultTransform = "translate(50, 50)";
+          this.elementTime.seconds.setAttributeNS(
+            null,
+            "transform",
+            `${defaultTransform} rotate(${6 * this.time.second})`
+          );
+          this.elementTime.minute.setAttributeNS(
+            null,
+            "transform",
+            `${defaultTransform} rotate(${6 * this.time.minute + 0.1 * this.time.second})`
+          );
+          this.elementTime.hour.setAttributeNS(
+            null,
+            "transform",
+            `${defaultTransform} rotate(${6 * this.time.hour + 0.1 * this.time.minute})`
+          );
+        }
+
+        changeTime() {
+          this.time = getFullTime();
+          this.type == "analogico" ? this.changePointerTime() : this.changeTextTime();
+        }
+
+        render() {
+          const element = this.constructElement();
+          this.changeTime();
+          if (this.shadowRoot.childNodes.length <= 0) this.shadowRoot.append(element);
+          else this.shadowRoot.replaceChild(element, this.shadowRoot.childNodes[0]);
+        }
+      }
+
+      customElements.define("wc-relogio", WcRelogio);
+    </script>
+  </body>
+</html>
